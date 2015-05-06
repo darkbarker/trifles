@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# mysql2utf8 0.99 @ bitel dimon
+# mysql2utf8 0.99 @ bitel dimon (dark_barker)
 VER="mysql2utf8 0.99"
 
 MUSER=''
@@ -31,9 +31,9 @@ while getopts "u:p:D:b:h:" optname; do
 			echo "u - mysql-user"
 			echo "p - mysql-password"
 			echo "D - mysql-database"
-			echo "b - mysql-binary"
-			echo "h - mysql-host"
-			echo "examle: mysql2utf8 -u root -p 666 -D bgbilling_test_utf8 -b /usr/bin/mysql -h 192.168.184.245"
+			echo "b - mysql-binary (default: mysql)"
+			echo "h - mysql-host (default: localhost)"
+			echo "example: mysql2utf8 -u root -p 666 -D bgbilling_test_utf8 -b /usr/bin/mysql -h 192.168.184.245"
 			exit 0
 		;;
 	esac
