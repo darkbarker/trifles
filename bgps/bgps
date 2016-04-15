@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+
+# bgps 0.99 @ bitel dimon
+VER="bgps 0.99"
+
+
+while getopts "ih" optname; do
+	case "$optname" in
+		"i")
+			IS_SHOWINFO=1
+		;;
+		"h")
+			echo "$VER"
+			echo "i - more app info"
+			echo "h - help and exit"
+			exit 0
+		;;
+	esac
+done
+
+
+declare -A prognames
+
+prognames['activemq/bin']='ActiveMQ|activemq_status'
+
+prognames['ShellFrame']='BGBilling Client (<6.1)'
+prognames['ru.bitel.bgbilling.client.BGClient']='BGBilling Client'
+
+prognames['bitel.billing.server.Server']='BGBilling Server|server_status'
+prognames['bitel.billing.server.TaskExecuter']='BGBilling Scheduler'
+prognames['bitel.billing.server.DataLoader']='BGBilling DataLoader'
+
+prognames['ru.bitel.frk.server.CmdTcpServer']='BGCashcheckServer'
+
+prognames['bitel.billing.server.ext.dhcp.DHCP']='dhcp'
+
+prognames['inet-access']='BG Inet access'
+prognames['inet-accounting']='BG Inet accounting'
+
+prognames['bitel.billing.server.netflow.ipn.Collector']='BG ipn netflow collector'
+
+prognames['bitel.billing.server.radius.Radius']='BGBilling Radius'
+
+prognames['tv-access']='BG tv access'
+prognames['tv-accounting']='BG tv accounting'
+
+prognames['ru.bitel.bgbilling.kernel.wifi.WiFiAgent']='BG WiFi Agent'
+
+prognames['org.eclipse.equinox.launcher']='IGNORE'
+
+
+JAVAGREP='java'
+
+
+server_status(){
+	#echo "Parameter #1 is [$1]"
+	#26847 dimon     0.4  3.3 3598556 136404 Sl 14:50:27 /opt/java/bin/java -Djava.net.preferIPv4Stack=true -Dapp.name=BGBillingServer -Dnetworkaddress.cache.ttl=3600 -Xmx256m -cp .:./lib/* ru.bitel.common.bootstrap.Boot bitel.billing.server.Server start
+	[[ $1 =~ ^([[:digit:]]+) ]] && pid=${BASH_REMATCH[1]}
+	command="/proc/$pid/cwd/server_status.sh"
+	eval $command
+}
+
+activemq_status(){
+	#  281 root      0.1  4.5 2577444 183908 Sl   Mar 06 /opt/java/bin/java -Xms256M -Xmx256M -Djava.util.logging.config.file=logging.properties -Dhawtio.realm=activemq -Dhawtio.role=admins -Dhawtio.rolePrincipalClasses=org.apache.activemq.jaas.GroupPrincipal -Djava.security.auth.login.config=/opt/activemq/conf/login.config -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote -Djava.awt.headless=true -Djava.io.tmpdir=/opt/activemq/tmp -Dactivemq.classpath=/opt/activemq/conf; -Dactivemq.home=/opt/activemq -Dactivemq.base=/opt/activemq -Dactivemq.conf=/opt/activemq/conf -Dactivemq.data=/opt/activemq/data -jar /opt/activemq/bin/activemq.jar start
+	[[ $1 =~ activemq\.home=([[:graph:]]+) ]] && ahome=${BASH_REMATCH[1]}
+	command="$ahome/bin/activemq --version"
+	eval $command
+}
+
+pslines=`ps -Ao pid,user,%cpu,%mem,vsz,rss,stat,start,command`
+
+
+headfirst=''
+
+IFS=$'\n'
+for psline in $pslines ; do
+	if [[ $headfirst = '' ]] ; then headfirst=$psline; continue; fi
+
+	if [[ ! "$psline" =~ "$JAVAGREP" ]] ; then continue; fi
+
+	name='unknown'
+	for progkey in ${!prognames[@]}; do
+		if [[ "$psline" =~ "$progkey" ]] ; then name=${prognames[$progkey]}; fi
+	done
+
+	if [[ $name = 'IGNORE' ]] ; then continue; fi
+	
+	# split to name and infofuncname (use setted IFS deliminter)
+	namesplit=(${name//|/$IFS})
+	
+	name=${namesplit[0]}
+	func=${namesplit[1]}
+
+	appinfo=''
+	if [[ $IS_SHOWINFO = '1' ]]; then
+		if [[ $func != '' ]]; then appinfo="$($func $psline)"; fi
+	fi
+
+	echo -e "\033[1m$name\033[0m"
+	echo $headfirst
+	echo $psline
+	if [[ $appinfo != '' ]]; then echo -e "---\n$appinfo"; fi
+	echo
+done
+unset IFS
